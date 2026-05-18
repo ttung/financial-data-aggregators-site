@@ -290,7 +290,7 @@
               stepSize: 1,
               maxTicksLimit: 60,
               autoSkip: false,
-              callback: val => SIG_YEARS.has(val) ? `${val} (${val - latestYear}yr)` : '',
+              callback: val => { const y = Math.round(val); return SIG_YEARS.has(y) ? `${y} (${y - latestYear}yr)` : ''; },
             },
           },
           y: {
