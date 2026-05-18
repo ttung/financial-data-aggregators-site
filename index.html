@@ -263,6 +263,7 @@
         responsive: true,
         maintainAspectRatio: false,
         parsing: false,
+        layout: { padding: { right: 50 } },
         plugins: {
           legend: {
             display: datasets.length > 1,
@@ -284,11 +285,13 @@
             max: CUTOFF + 0.5,
             title: { display: true, text: 'Maturity Year', color: '#64748b', font: { size: 11 } },
             grid: { color: '#f1f5f9' },
+            afterBuildTicks(scale) {
+              scale.ticks = [];
+              for (let y = latestYear; y <= CUTOFF; y++) scale.ticks.push({ value: y });
+            },
             ticks: {
               color: '#64748b',
               font: { size: 11 },
-              stepSize: 1,
-              maxTicksLimit: 60,
               autoSkip: false,
               callback: val => { const y = Math.round(val); return SIG_YEARS.has(y) ? `${y} (${y - latestYear}yr)` : ''; },
             },
