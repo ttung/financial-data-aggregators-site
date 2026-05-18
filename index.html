@@ -291,8 +291,7 @@
             ticks: {
               color: '#64748b',
               font: { size: 11 },
-              autoSkip: false,
-              callback: val => { const y = Math.round(val); return SIG_YEARS.has(y) ? `${y} (${y - latestYear}yr)` : ''; },
+              callback: val => SIG_YEARS.has(val) ? `${val} (${val - latestYear}yr)` : '',
             },
           },
           y: {
