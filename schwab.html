@@ -212,9 +212,31 @@
     return fundData.filter(([date]) => date >= cutoff);
   }
 
+  // ── Weekday spine ────────────────────────────────────────────────────────
+  // Returns every Mon–Fri between startDate and endDate (ISO strings, inclusive).
+  function weekdaySpine(startDate, endDate) {
+    const spine = [];
+    const cur = new Date(startDate + 'T00:00:00');
+    const end = new Date(endDate + 'T00:00:00');
+    while (cur <= end) {
+      const dow = cur.getDay();
+      if (dow !== 0 && dow !== 6) spine.push(cur.toISOString().slice(0, 10));
+      cur.setDate(cur.getDate() + 1);
+    }
+    return spine;
+  }
+
   // ── Chart datasets ───────────────────────────────────────────────────────
   function buildDatasets(cutoff) {
     const datasets = [];
+
+    // Collect all actual dates across funds to determine the visible range.
+    const allActual = Object.values(data.funds)
+      .flatMap(f => filteredData(f.data, cutoff).map(([d]) => d))
+      .sort();
+    if (!allActual.length) return datasets;
+
+    const spine = weekdaySpine(allActual[0], allActual.at(-1));
 
     for (const [ticker, meta] of Object.entries(FUND_META)) {
       const fund = data.funds[ticker];
@@ -223,22 +245,25 @@
       const pts = filteredData(fund.data, cutoff);
       if (!pts.length) continue;
 
+      const byDate = Object.fromEntries(pts.map(([d, y]) => [d, y]));
       const mult = teyMultiplier(fund.exempt);
       const { color } = meta;
+      const hasData = spine.filter(d => d in byDate).length;
 
       // Raw yield — dashed
       datasets.push({
         label: `${ticker} raw`,
-        data: pts.map(([date, y]) => ({ x: date, y })),
+        data: spine.map(d => ({ x: d, y: d in byDate ? byDate[d] : null })),
         borderColor: color,
         backgroundColor: 'transparent',
         borderWidth: 1.5,
         borderDash: [5, 4],
-        pointRadius: pts.length <= 10 ? 3 : 0,
+        pointRadius: hasData <= 10 ? 3 : 0,
         pointHoverRadius: 5,
         pointBackgroundColor: color,
         fill: false,
         tension: 0.2,
+        spanGaps: false,
         _ticker: ticker,
         _type: 'raw',
       });
@@ -246,16 +271,17 @@
       // TEY — solid
       datasets.push({
         label: `${ticker} TEY`,
-        data: pts.map(([date, y]) => ({ x: date, y: +(y * mult).toFixed(4) })),
+        data: spine.map(d => ({ x: d, y: d in byDate ? +(byDate[d] * mult).toFixed(4) : null })),
         borderColor: color,
         backgroundColor: 'transparent',
         borderWidth: 2,
         borderDash: [],
-        pointRadius: pts.length <= 10 ? 3 : 0,
+        pointRadius: hasData <= 10 ? 3 : 0,
         pointHoverRadius: 5,
         pointBackgroundColor: color,
         fill: false,
         tension: 0.2,
+        spanGaps: false,
         _ticker: ticker,
         _type: 'tey',
       });
@@ -278,6 +304,14 @@
   // ── Render / update chart ────────────────────────────────────────────────
   function getRange() { return RANGES.find(r => r.key === activeRange); }
 
+  function buildSpineForRange(cutoff) {
+    const allActual = Object.values(data.funds)
+      .flatMap(f => filteredData(f.data, cutoff).map(([d]) => d))
+      .sort();
+    if (!allActual.length) return [];
+    return weekdaySpine(allActual[0], allActual.at(-1));
+  }
+
   function updateChart() {
     const range = getRange();
     const cutoff = cutoffDate(range.days);
@@ -286,9 +320,7 @@
     if (!chart) return;
 
     chart.data.datasets = datasets;
-    // Compute x-axis labels from all dates in view
-    const allDates = [...new Set(datasets.flatMap(d => d.data.map(p => p.x)))].sort();
-    chart.data.labels = allDates;
+    chart.data.labels = buildSpineForRange(cutoff);
     chart.options.parsing = false;
     chart.update('none');
   }
@@ -297,7 +329,7 @@
     const range = getRange();
     const cutoff = cutoffDate(range.days);
     const datasets = buildDatasets(cutoff);
-    const allDates = [...new Set(datasets.flatMap(d => d.data.map(p => p.x)))].sort();
+    const allDates = buildSpineForRange(cutoff);
 
     chart = new Chart(ctx, {
       type: 'line',
