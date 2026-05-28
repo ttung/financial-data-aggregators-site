@@ -252,14 +252,20 @@
       if (!pts.length) continue;
 
       const byDate = Object.fromEntries(pts.map(([d, y]) => [d, y]));
+      const lastDate = pts.at(-1)[0];
       const mult = teyMultiplier(fund.exempt);
       const { color } = meta;
       const hasData = spine.filter(d => d in byDate).length;
 
+      // Forward-fill after last actual date so sparse funds (SGOV, VBIL) appear
+      // across the full spine. _lastDate lets the tooltip flag stale values.
+      const rawY  = d => d in byDate ? byDate[d]                   : (d > lastDate ? byDate[lastDate]                        : null);
+      const teyY  = d => d in byDate ? +(byDate[d] * mult).toFixed(4) : (d > lastDate ? +(byDate[lastDate] * mult).toFixed(4) : null);
+
       // Raw yield — dashed
       datasets.push({
         label: `${ticker} raw`,
-        data: spine.map(d => ({ x: d, y: d in byDate ? byDate[d] : null })),
+        data: spine.map(d => ({ x: d, y: rawY(d) })),
         borderColor: color,
         backgroundColor: 'transparent',
         borderWidth: 1.5,
@@ -272,12 +278,13 @@
         spanGaps: true,
         _ticker: ticker,
         _type: 'raw',
+        _lastDate: lastDate,
       });
 
       // TEY — solid
       datasets.push({
         label: `${ticker} TEY`,
-        data: spine.map(d => ({ x: d, y: d in byDate ? +(byDate[d] * mult).toFixed(4) : null })),
+        data: spine.map(d => ({ x: d, y: teyY(d) })),
         borderColor: color,
         backgroundColor: 'transparent',
         borderWidth: 2,
@@ -290,6 +297,7 @@
         spanGaps: true,
         _ticker: ticker,
         _type: 'tey',
+        _lastDate: lastDate,
       });
     }
 
@@ -317,7 +325,9 @@
     const val = item.parsed.y;
     if (val == null) return null;
     const type = ds._type === 'tey' ? 'TEY' : 'raw';
-    return `${ds._ticker}: ${val.toFixed(2)}% ${type}`;
+    const stale = ds._lastDate && item.label > ds._lastDate;
+    const suffix = stale ? ` (as of ${ds._lastDate})` : '';
+    return `${ds._ticker}: ${val.toFixed(2)}% ${type}${suffix}`;
   }
 
   // ── Render / update chart ────────────────────────────────────────────────
