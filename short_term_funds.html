@@ -271,7 +271,7 @@
         borderWidth: 1.5,
         borderDash: [5, 4],
         segment: {
-          borderColor: ctx => ctx.dataset.data[ctx.p1DataIndex]?.x > lastDate ? 'transparent' : undefined,
+          borderColor: ctx => ctx.chart.data.datasets[ctx.datasetIndex]?.data[ctx.p1DataIndex]?.x > lastDate ? 'transparent' : undefined,
         },
         pointRadius: ctx => (hasData <= 10 && !(ctx.dataset.data[ctx.dataIndex]?.x > lastDate)) ? 3 : 0,
         pointHoverRadius: ctx => ctx.dataset.data[ctx.dataIndex]?.x > lastDate ? 0 : 5,
@@ -293,7 +293,7 @@
         borderWidth: 2,
         borderDash: [],
         segment: {
-          borderColor: ctx => ctx.dataset.data[ctx.p1DataIndex]?.x > lastDate ? 'transparent' : undefined,
+          borderColor: ctx => ctx.chart.data.datasets[ctx.datasetIndex]?.data[ctx.p1DataIndex]?.x > lastDate ? 'transparent' : undefined,
         },
         pointRadius: ctx => (hasData <= 10 && !(ctx.dataset.data[ctx.dataIndex]?.x > lastDate)) ? 3 : 0,
         pointHoverRadius: ctx => ctx.dataset.data[ctx.dataIndex]?.x > lastDate ? 0 : 5,
