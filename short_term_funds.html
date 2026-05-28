@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Short-Term Fund Yields</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="schwab_data.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #f8fafc;
+      color: #1e293b;
+    }
+
+    header {
+      padding: 1.5rem 2rem 1rem;
+      background: white;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .back-link { font-size: 0.8rem; color: #64748b; text-decoration: none; flex-shrink: 0; }
+    .back-link:hover { color: #1e293b; }
+    h1 { font-size: 1.25rem; font-weight: 600; }
+    .source { font-size: 0.8rem; color: #94a3b8; }
+    .source a { color: #64748b; text-decoration: none; }
+    .source a:hover { text-decoration: underline; }
+
+    main { padding: 1.5rem 2rem 3rem; max-width: 1000px; }
+
+    .card {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+    }
+
+    /* ── Tax inputs ── */
+    .tax-card {
+      padding: 1rem 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+    }
+    .tax-card .label-group { display: flex; flex-direction: column; gap: 0.2rem; }
+    .tax-card label { font-size: 0.75rem; font-weight: 500; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; }
+    .tax-input-row { display: flex; align-items: center; gap: 0.4rem; }
+    .tax-input-row input[type=number] {
+      width: 5.5rem;
+      padding: 0.35rem 0.5rem;
+      border: 1px solid #cbd5e1;
+      border-radius: 5px;
+      font-size: 0.9rem;
+      font-variant-numeric: tabular-nums;
+      color: #1e293b;
+      background: white;
+    }
+    .tax-input-row input[type=number]:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37,99,235,0.15); }
+    .tax-unit { font-size: 0.85rem; color: #64748b; }
+    .tax-hint { font-size: 0.75rem; color: #94a3b8; margin-top: 0.15rem; }
+    .tax-sep { width: 1px; background: #e2e8f0; align-self: stretch; }
+
+    /* ── Exemption table ── */
+    .exempt-table { font-size: 0.78rem; color: #475569; }
+    .exempt-table td { padding: 0.1rem 0.5rem; }
+    .exempt-table td:first-child { font-weight: 600; padding-left: 0; }
+    .yes { color: #16a34a; }
+    .no  { color: #94a3b8; }
+
+    /* ── Range buttons ── */
+    .range-row {
+      display: flex;
+      gap: 0.375rem;
+      margin-bottom: 0.75rem;
+      flex-wrap: wrap;
+    }
+    .range-btn {
+      padding: 0.3rem 0.7rem;
+      font-size: 0.8rem;
+      font-weight: 500;
+      border: 1px solid #e2e8f0;
+      border-radius: 5px;
+      background: white;
+      color: #64748b;
+      cursor: pointer;
+      transition: background 0.1s, color 0.1s, border-color 0.1s;
+    }
+    .range-btn:hover { background: #f1f5f9; border-color: #cbd5e1; }
+    .range-btn.active {
+      background: #2563eb;
+      color: white;
+      border-color: #2563eb;
+    }
+
+    /* ── Chart ── */
+    .chart-card { padding: 1.25rem 1rem 0.875rem; height: 420px; margin-bottom: 1.5rem; }
+
+    /* ── Legend ── */
+    .legend-card {
+      padding: 0.875rem 1.25rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 2rem;
+      flex-wrap: wrap;
+    }
+    .legend-section { display: flex; flex-direction: column; gap: 0.5rem; }
+    .legend-section-title { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; font-weight: 600; margin-bottom: 0.1rem; }
+    .legend-item { display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; color: #334155; }
+    .legend-swatch {
+      width: 28px;
+      height: 2px;
+      flex-shrink: 0;
+      position: relative;
+    }
+    .legend-swatch.solid { height: 2.5px; }
+    .legend-swatch.dashed {
+      background: repeating-linear-gradient(
+        90deg,
+        var(--c) 0, var(--c) 6px,
+        transparent 6px, transparent 10px
+      );
+    }
+    .legend-swatch.solid { background: var(--c); }
+    .legend-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--c);
+      flex-shrink: 0;
+    }
+    .legend-sep { width: 1px; background: #e2e8f0; align-self: stretch; }
+
+    .empty { color: #94a3b8; padding: 2rem 0; }
+
+    .updated { font-size: 0.75rem; color: #94a3b8; margin-left: auto; }
+  </style>
+</head>
+<body>
+<header>
+  <a class="back-link" href="index.html">← Back</a>
+  <div>
+    <h1>Short-Term Fund Yields</h1>
+    <p class="source">
+      Schwab MMFs: <a href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=0000857156&type=N-MFP3" target="_blank" rel="noopener">SEC EDGAR N-MFP3</a> · Ultra Shares · 7-day yield with waivers ·
+      SGOV: <a href="https://www.ishares.com/us/products/314116/" target="_blank" rel="noopener">iShares</a> · 30-day SEC yield ·
+      VBIL: <a href="https://investor.vanguard.com/investment-products/etfs/profile/vbil" target="_blank" rel="noopener">Vanguard</a> · 30-day yield (holdings YTM)
+    </p>
+  </div>
+</header>
+<main id="main"></main>
+
+<script>
+(function () {
+  const data = (typeof SCHWAB_DATA !== 'undefined') ? SCHWAB_DATA : null;
+  const mainEl = document.getElementById('main');
+
+  if (!data) {
+    mainEl.innerHTML = '<p class="empty">No data available.</p>';
+    return;
+  }
+
+  // ── Config ──────────────────────────────────────────────────────────────
+
+  const FUND_META = {
+    SUTXX: { color: '#2563eb', label: 'SUTXX — U.S. Treasury (MMF)' },
+    SCAXX: { color: '#16a34a', label: 'SCAXX — CA Municipal (MMF)' },
+    SNAXX: { color: '#d97706', label: 'SNAXX — Prime Advantage (MMF)' },
+    SGOV:  { color: '#7c3aed', label: 'SGOV — iShares 0-3 Month Treasury ETF' },
+    VBIL:  { color: '#0891b2', label: 'VBIL — Vanguard 0-3 Month T-Bill ETF' },
+  };
+
+  const RANGES = [
+    { key: '1d',  label: '1D',  days: 1   },
+    { key: '1w',  label: '1W',  days: 7   },
+    { key: '1m',  label: '1M',  days: 30  },
+    { key: '3m',  label: '3M',  days: 91  },
+    { key: '6m',  label: '6M',  days: 182 },
+    { key: '1y',  label: '1Y',  days: 365 },
+    { key: '2y',  label: '2Y',  days: 730 },
+    { key: '5y',  label: '5Y',  days: 1825 },
+    { key: '10y', label: '10Y', days: 3650 },
+    { key: 'max', label: 'Max', days: Infinity },
+  ];
+
+  let activeRange = '1y';
+  let fedRate = data.defaults.fedRate / 100;
+  let caRate  = data.defaults.caRate  / 100;
+  let chart   = null;
+
+  // ── Tax-equivalent yield multiplier ─────────────────────────────────────
+  // After-tax return of fund = rawYield × (1 − taxes fund incurs)
+  // TEY solves: TEY × (1 − fedRate − caRate) = rawYield × (1 − taxesFundIncurs)
+  function teyMultiplier(exempt) {
+    const taxesFundIncurs = (exempt.federal ? 0 : fedRate) + (exempt.ca ? 0 : caRate);
+    const fullRate = fedRate + caRate;
+    if (fullRate >= 1) return 1; // guard against degenerate input
+    return (1 - taxesFundIncurs) / (1 - fullRate);
+  }
+
+  // ── Date filtering ───────────────────────────────────────────────────────
+  function cutoffDate(days) {
+    if (!isFinite(days)) return null;
+    // Anchor to the latest date present in any fund
+    const allDates = Object.values(data.funds).flatMap(f => f.data.map(d => d[0]));
+    const latest = allDates.sort().at(-1);
+    const d = new Date(latest + 'T00:00:00');
+    d.setDate(d.getDate() - days);
+    return d.toISOString().slice(0, 10);
+  }
+
+  function filteredData(fundData, cutoff) {
+    if (!cutoff) return fundData;
+    return fundData.filter(([date]) => date >= cutoff);
+  }
+
+  // ── Weekday spine ────────────────────────────────────────────────────────
+  // Returns every Mon–Fri between startDate and endDate (ISO strings, inclusive).
+  function weekdaySpine(startDate, endDate) {
+    const spine = [];
+    const cur = new Date(startDate + 'T00:00:00');
+    const end = new Date(endDate + 'T00:00:00');
+    while (cur <= end) {
+      const dow = cur.getDay();
+      if (dow !== 0 && dow !== 6) spine.push(cur.toISOString().slice(0, 10));
+      cur.setDate(cur.getDate() + 1);
+    }
+    return spine;
+  }
+
+  // ── Chart datasets ───────────────────────────────────────────────────────
+  function buildDatasets(cutoff) {
+    const datasets = [];
+
+    // Collect all actual dates across funds to determine the visible range.
+    const allActual = Object.values(data.funds)
+      .flatMap(f => filteredData(f.data, cutoff).map(([d]) => d))
+      .sort();
+    if (!allActual.length) return datasets;
+
+    const spine = weekdaySpine(allActual[0], allActual.at(-1));
+
+    for (const [ticker, meta] of Object.entries(FUND_META)) {
+      const fund = data.funds[ticker];
+      if (!fund || !fund.data.length) continue;
+
+      const pts = filteredData(fund.data, cutoff);
+      if (!pts.length) continue;
+
+      const byDate = Object.fromEntries(pts.map(([d, y]) => [d, y]));
+      const mult = teyMultiplier(fund.exempt);
+      const { color } = meta;
+      const hasData = spine.filter(d => d in byDate).length;
+
+      // Raw yield — dashed
+      datasets.push({
+        label: `${ticker} raw`,
+        data: spine.map(d => ({ x: d, y: d in byDate ? byDate[d] : null })),
+        borderColor: color,
+        backgroundColor: 'transparent',
+        borderWidth: 1.5,
+        borderDash: [5, 4],
+        pointRadius: hasData <= 10 ? 3 : 0,
+        pointHoverRadius: 5,
+        pointBackgroundColor: color,
+        fill: false,
+        tension: 0.2,
+        spanGaps: true,
+        _ticker: ticker,
+        _type: 'raw',
+      });
+
+      // TEY — solid
+      datasets.push({
+        label: `${ticker} TEY`,
+        data: spine.map(d => ({ x: d, y: d in byDate ? +(byDate[d] * mult).toFixed(4) : null })),
+        borderColor: color,
+        backgroundColor: 'transparent',
+        borderWidth: 2,
+        borderDash: [],
+        pointRadius: hasData <= 10 ? 3 : 0,
+        pointHoverRadius: 5,
+        pointBackgroundColor: color,
+        fill: false,
+        tension: 0.2,
+        spanGaps: true,
+        _ticker: ticker,
+        _type: 'tey',
+      });
+    }
+
+    return datasets;
+  }
+
+  // ── Tooltip ──────────────────────────────────────────────────────────────
+  function tooltipTitle(items) {
+    return items[0]?.label ?? '';
+  }
+
+  function tooltipLabel(item) {
+    const ds = item.dataset;
+    const type = ds._type === 'tey' ? 'TEY' : 'raw';
+    return `${ds._ticker} ${type}: ${item.parsed.y.toFixed(2)}%`;
+  }
+
+  // ── Render / update chart ────────────────────────────────────────────────
+  function getRange() { return RANGES.find(r => r.key === activeRange); }
+
+  function buildSpineForRange(cutoff) {
+    const allActual = Object.values(data.funds)
+      .flatMap(f => filteredData(f.data, cutoff).map(([d]) => d))
+      .sort();
+    if (!allActual.length) return [];
+    return weekdaySpine(allActual[0], allActual.at(-1));
+  }
+
+  function updateChart() {
+    const range = getRange();
+    const cutoff = cutoffDate(range.days);
+    const datasets = buildDatasets(cutoff);
+
+    if (!chart) return;
+
+    chart.data.datasets = datasets;
+    chart.data.labels = buildSpineForRange(cutoff);
+    chart.options.parsing = false;
+    chart.update('none');
+  }
+
+  function initChart(ctx) {
+    const range = getRange();
+    const cutoff = cutoffDate(range.days);
+    const datasets = buildDatasets(cutoff);
+    const allDates = buildSpineForRange(cutoff);
+
+    chart = new Chart(ctx, {
+      type: 'line',
+      data: { labels: allDates, datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        parsing: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              title: tooltipTitle,
+              label: tooltipLabel,
+            },
+            itemSort: (a, b) => b.parsed.y - a.parsed.y,
+            padding: 5,
+            titleFont: { size: 11 },
+            bodyFont: { size: 11 },
+            boxWidth: 10,
+            boxHeight: 10,
+            boxPadding: 3,
+          },
+        },
+        scales: {
+          x: {
+            type: 'category',
+            grid: { color: '#f1f5f9' },
+            ticks: {
+              color: '#64748b',
+              font: { size: 11 },
+              maxTicksLimit: 10,
+              maxRotation: 0,
+            },
+          },
+          y: {
+            title: { display: true, text: 'Yield (%)', color: '#64748b', font: { size: 11 } },
+            grid: { color: '#f1f5f9' },
+            ticks: {
+              color: '#64748b',
+              font: { size: 11 },
+              callback: v => v.toFixed(2) + '%',
+            },
+          },
+        },
+      },
+    });
+  }
+
+  // ── Legend HTML ──────────────────────────────────────────────────────────
+  function legendHTML() {
+    const fundRows = Object.entries(FUND_META).map(([ticker, { color, label }]) => {
+      const fund = data.funds[ticker];
+      const latest = fund?.data.at(-1);
+      const raw = latest ? latest[1].toFixed(2) + '%' : '—';
+      const mult = fund ? teyMultiplier(fund.exempt) : 1;
+      const tey = latest ? (latest[1] * mult).toFixed(2) + '%' : '—';
+      return `
+        <div class="legend-item">
+          <span class="legend-swatch solid" style="--c:${color}"></span>
+          <span class="legend-swatch dashed" style="--c:${color}"></span>
+          <span style="font-weight:600;color:${color}">${ticker}</span>
+          <span>${label.split('—')[1].trim()}</span>
+          <span style="margin-left:auto;font-variant-numeric:tabular-nums;color:#64748b;font-size:0.75rem;">
+            raw&nbsp;${raw} · TEY&nbsp;${tey}
+          </span>
+        </div>`;
+    }).join('');
+
+    return `
+      <div style="display:flex;flex-direction:column;gap:0.4rem;flex:1">
+        <div class="legend-section-title">Funds (latest values)</div>
+        ${fundRows}
+      </div>
+      <div class="legend-sep"></div>
+      <div style="display:flex;flex-direction:column;gap:0.5rem;">
+        <div class="legend-section-title">Line style</div>
+        <div class="legend-item">
+          <span class="legend-swatch solid" style="--c:#64748b"></span>
+          <span>Tax-equivalent yield (TEY)</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-swatch dashed" style="--c:#64748b"></span>
+          <span>Raw yield</span>
+        </div>
+      </div>`;
+  }
+
+  // ── Scaffold ─────────────────────────────────────────────────────────────
+  const rangeButtonsHTML = RANGES.map(r =>
+    `<button class="range-btn${r.key === activeRange ? ' active' : ''}" data-range="${r.key}">${r.label}</button>`
+  ).join('');
+
+  const exemptRows = Object.entries(data.funds).map(([ticker, fund]) => {
+    const fedStr = fund.exempt.federal
+      ? '<span class="yes">✓ exempt</span>'
+      : '<span class="no">taxable</span>';
+    const caStr  = fund.exempt.ca
+      ? '<span class="yes">✓ exempt</span>'
+      : '<span class="no">taxable</span>';
+    return `<tr><td>${ticker}</td><td>${fedStr}</td><td>${caStr}</td></tr>`;
+  }).join('');
+
+  mainEl.innerHTML = `
+    <div class="card tax-card">
+      <div class="label-group">
+        <label>Federal marginal rate</label>
+        <div class="tax-input-row">
+          <input type="number" id="fed-rate" min="0" max="99" step="0.1"
+                 value="${data.defaults.fedRate}">
+          <span class="tax-unit">%</span>
+        </div>
+        <div class="tax-hint">top bracket + NIIT default</div>
+      </div>
+      <div class="tax-sep"></div>
+      <div class="label-group">
+        <label>CA marginal rate</label>
+        <div class="tax-input-row">
+          <input type="number" id="ca-rate" min="0" max="99" step="0.1"
+                 value="${data.defaults.caRate}">
+          <span class="tax-unit">%</span>
+        </div>
+        <div class="tax-hint">top bracket + MHSA default</div>
+      </div>
+      <div class="tax-sep"></div>
+      <div class="label-group">
+        <label>Tax exemption</label>
+        <table class="exempt-table">
+          <tr><th></th><th>Federal</th><th>CA</th></tr>
+          ${exemptRows}
+        </table>
+      </div>
+    </div>
+
+    <div class="range-row" id="range-row">${rangeButtonsHTML}</div>
+
+    <div class="card chart-card"><canvas id="main-canvas"></canvas></div>
+
+    <div class="card legend-card" id="legend"></div>
+  `;
+
+  // Init chart
+  const ctx = document.getElementById('main-canvas').getContext('2d');
+  initChart(ctx);
+  document.getElementById('legend').innerHTML = legendHTML();
+
+  // ── Range buttons ─────────────────────────────────────────────────────
+  document.getElementById('range-row').addEventListener('click', e => {
+    const btn = e.target.closest('.range-btn');
+    if (!btn) return;
+    activeRange = btn.dataset.range;
+    document.querySelectorAll('.range-btn').forEach(b =>
+      b.classList.toggle('active', b.dataset.range === activeRange)
+    );
+    updateChart();
+  });
+
+  // ── Tax rate inputs ───────────────────────────────────────────────────
+  function onRateChange() {
+    fedRate = Math.max(0, Math.min(0.99, parseFloat(document.getElementById('fed-rate').value || 0) / 100));
+    caRate  = Math.max(0, Math.min(0.99, parseFloat(document.getElementById('ca-rate').value  || 0) / 100));
+    updateChart();
+    document.getElementById('legend').innerHTML = legendHTML();
+  }
+  document.getElementById('fed-rate').addEventListener('input', onRateChange);
+  document.getElementById('ca-rate').addEventListener('input',  onRateChange);
+
+})();
+</script>
+</body>
+</html>
