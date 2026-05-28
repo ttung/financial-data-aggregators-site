@@ -296,6 +296,17 @@
     return datasets;
   }
 
+  // ── Custom interaction mode ──────────────────────────────────────────────
+  // Finds the nearest dataset (by y-distance), then returns all datasets of
+  // that same type (raw or TEY) at the same x-index.
+  Chart.Interaction.modes.typeIndex = function(chart, e, options) {
+    const nearest = Chart.Interaction.modes.nearest(chart, e, { intersect: false });
+    if (!nearest.length) return [];
+    const nearestType = chart.data.datasets[nearest[0].datasetIndex]._type;
+    const atIndex = Chart.Interaction.modes.index(chart, e, { intersect: false });
+    return atIndex.filter(el => chart.data.datasets[el.datasetIndex]._type === nearestType);
+  };
+
   // ── Tooltip ──────────────────────────────────────────────────────────────
   function tooltipTitle(items) {
     return items[0]?.label ?? '';
@@ -303,8 +314,10 @@
 
   function tooltipLabel(item) {
     const ds = item.dataset;
+    const val = item.parsed.y;
+    if (val == null) return null;
     const type = ds._type === 'tey' ? 'TEY' : 'raw';
-    return `${ds._ticker} ${type}: ${item.parsed.y.toFixed(2)}%`;
+    return `${ds._ticker}: ${val.toFixed(2)}% ${type}`;
   }
 
   // ── Render / update chart ────────────────────────────────────────────────
@@ -344,7 +357,7 @@
         responsive: true,
         maintainAspectRatio: false,
         parsing: false,
-        interaction: { mode: 'index', intersect: false },
+        interaction: { mode: 'typeIndex', intersect: false },
         plugins: {
           legend: { display: false },
           tooltip: {
@@ -352,13 +365,7 @@
               title: tooltipTitle,
               label: tooltipLabel,
             },
-            itemSort: (a, b) => b.parsed.y - a.parsed.y,
-            padding: 5,
-            titleFont: { size: 11 },
-            bodyFont: { size: 11 },
-            boxWidth: 10,
-            boxHeight: 10,
-            boxPadding: 3,
+            itemSort: (a, b) => (b.parsed.y ?? 0) - (a.parsed.y ?? 0),
           },
         },
         scales: {
