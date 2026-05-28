@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Schwab Money Market Fund Yields</title>
+  <title>Short-Term Treasury Yields</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="schwab_data.js"></script>
   <style>
@@ -144,8 +144,12 @@
 <header>
   <a class="back-link" href="index.html">← Back</a>
   <div>
-    <h1>Schwab Money Market Fund Yields</h1>
-    <p class="source">Source: <a href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=0000857156&type=N-MFP3" target="_blank" rel="noopener">SEC EDGAR N-MFP3</a> · Ultra Shares · 7-day yield with waivers</p>
+    <h1>Short-Term Treasury Yields</h1>
+    <p class="source">
+      Schwab MMFs: <a href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=0000857156&type=N-MFP3" target="_blank" rel="noopener">SEC EDGAR N-MFP3</a> · Ultra Shares · 7-day yield with waivers ·
+      SGOV: <a href="https://www.ishares.com/us/products/314116/" target="_blank" rel="noopener">iShares</a> · 30-day SEC yield ·
+      VBIL: <a href="https://investor.vanguard.com/investment-products/etfs/profile/vbil" target="_blank" rel="noopener">Vanguard</a> · 30-day yield (holdings YTM)
+    </p>
   </div>
 </header>
 <main id="main"></main>
@@ -163,9 +167,11 @@
   // ── Config ──────────────────────────────────────────────────────────────
 
   const FUND_META = {
-    SUTXX: { color: '#2563eb', label: 'SUTXX — U.S. Treasury' },
-    SCAXX: { color: '#16a34a', label: 'SCAXX — CA Municipal' },
-    SNAXX: { color: '#d97706', label: 'SNAXX — Prime Advantage' },
+    SUTXX: { color: '#2563eb', label: 'SUTXX — U.S. Treasury (MMF)' },
+    SCAXX: { color: '#16a34a', label: 'SCAXX — CA Municipal (MMF)' },
+    SNAXX: { color: '#d97706', label: 'SNAXX — Prime Advantage (MMF)' },
+    SGOV:  { color: '#7c3aed', label: 'SGOV — iShares 0-3 Month Treasury ETF' },
+    VBIL:  { color: '#0891b2', label: 'VBIL — Vanguard 0-3 Month T-Bill ETF' },
   };
 
   const RANGES = [
