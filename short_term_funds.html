@@ -99,7 +99,7 @@
     }
 
     /* ── Chart ── */
-    .chart-card { padding: 1.25rem 1rem 0.875rem; height: 420px; margin-bottom: 1.5rem; }
+    .chart-card { padding: 1.25rem 1rem 0.875rem; height: 420px; margin-bottom: 1rem; }
 
     /* ── Legend ── */
     .legend-card {
@@ -108,6 +108,7 @@
       align-items: flex-start;
       gap: 2rem;
       flex-wrap: wrap;
+      margin-bottom: 0;
     }
     .legend-section { display: flex; flex-direction: column; gap: 0.5rem; }
     .legend-section-title { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; font-weight: 600; margin-bottom: 0.1rem; }
@@ -462,6 +463,12 @@
   }).join('');
 
   mainEl.innerHTML = `
+    <div class="card chart-card"><canvas id="main-canvas"></canvas></div>
+
+    <div class="card legend-card" id="legend"></div>
+
+    <div class="range-row" id="range-row" style="margin-top:1rem">${rangeButtonsHTML}</div>
+
     <div class="card tax-card">
       <div class="label-group">
         <label>Federal marginal rate</label>
@@ -491,12 +498,6 @@
         </table>
       </div>
     </div>
-
-    <div class="range-row" id="range-row">${rangeButtonsHTML}</div>
-
-    <div class="card chart-card"><canvas id="main-canvas"></canvas></div>
-
-    <div class="card legend-card" id="legend"></div>
   `;
 
   // Init chart
