@@ -175,8 +175,6 @@
   };
 
   const RANGES = [
-    { key: '1d',  label: '1D',  days: 1   },
-    { key: '1w',  label: '1W',  days: 7   },
     { key: '1m',  label: '1M',  days: 30  },
     { key: '3m',  label: '3M',  days: 91  },
     { key: '6m',  label: '6M',  days: 182 },
@@ -187,7 +185,7 @@
     { key: 'max', label: 'Max', days: Infinity },
   ];
 
-  let activeRange = '1y';
+  let activeRange = '3m';
   let fedRate = data.defaults.fedRate / 100;
   let caRate  = data.defaults.caRate  / 100;
   let chart   = null;
