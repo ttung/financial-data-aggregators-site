@@ -463,13 +463,13 @@
   }).join('');
 
   mainEl.innerHTML = `
+    <div class="range-row" id="range-row">${rangeButtonsHTML}</div>
+
     <div class="card chart-card"><canvas id="main-canvas"></canvas></div>
 
     <div class="card legend-card" id="legend"></div>
 
-    <div class="range-row" id="range-row" style="margin-top:1rem">${rangeButtonsHTML}</div>
-
-    <div class="card tax-card">
+    <div class="card tax-card" style="margin-top:1rem">
       <div class="label-group">
         <label>Federal marginal rate</label>
         <div class="tax-input-row">
