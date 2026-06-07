@@ -259,7 +259,6 @@
 
     if (mainChart) {
       mainChart.data.datasets = datasets;
-      mainChart.options.plugins.legend.display = datasets.length > 1;
       mainChart.update('none');
       return;
     }
@@ -273,7 +272,7 @@
         parsing: false,
         plugins: {
           legend: {
-            display: datasets.length > 1,
+            display: true,
             position: 'top',
             align: 'end',
             labels: { boxWidth: 20, padding: 12, font: { size: 11 } },
